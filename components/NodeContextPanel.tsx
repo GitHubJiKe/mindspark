@@ -13,11 +13,25 @@ interface NodeContextPanelProps {
 
 const COLORS = [
   '#ffffff', // White
-  '#fee2e2', // Red
-  '#fef9c3', // Yellow
-  '#dcfce7', // Green
-  '#dbeafe', // Blue
-  '#f3e8ff', // Purple
+  '#fecaca', // Red 200
+  '#fca5a5', // Red 300
+  '#fdba74', // Orange 300
+  '#fcd34d', // Amber 300
+  '#fde047', // Yellow 300
+  '#bef264', // Lime 300
+  '#86efac', // Green 300
+  '#6ee7b7', // Emerald 300
+  '#5eead4', // Teal 300
+  '#67e8f9', // Cyan 300
+  '#7dd3fc', // Sky 300
+  '#93c5fd', // Blue 300
+  '#a5b4fc', // Indigo 300
+  '#c4b5fd', // Violet 300
+  '#d8b4fe', // Purple 300
+  '#f0abfc', // Fuchsia 300
+  '#f9a8d4', // Pink 300
+  '#fda4af', // Rose 300
+  '#cbd5e1', // Slate 300
 ];
 
 const SHAPES: { id: NodeShape; icon: React.ElementType }[] = [
@@ -27,7 +41,7 @@ const SHAPES: { id: NodeShape; icon: React.ElementType }[] = [
   { id: 'diamond', icon: Diamond },
 ];
 
-const ICONS = ['💡', '🔥', '🎯', '✅', '❌', '❤️', '⚠️', '📝'];
+const ICONS = ['💡', '🔥', '🎯', '✅', '❌', '❤️', '⚠️', '📝', '🚀', '⭐', '🚩', '💼', '🧠', '⚙️', '🔍', '🎉', '🔒', '💻'];
 
 export const NodeContextPanel: React.FC<NodeContextPanelProps> = ({
   selectedNode,
@@ -86,12 +100,12 @@ export const NodeContextPanel: React.FC<NodeContextPanelProps> = ({
       {/* Style Controls */}
       <div className="flex flex-col gap-3">
         {/* Colors */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide">
+        <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide snap-x">
             {COLORS.map((color) => (
                 <button
                     key={color}
                     onClick={() => handleColorChange(color)}
-                    className={`w-6 h-6 rounded-full border border-gray-200 transition-transform hover:scale-110 focus:outline-none ${currentStyle.backgroundColor === color ? 'ring-2 ring-indigo-500 ring-offset-1' : ''}`}
+                    className={`w-8 h-8 rounded-full border border-gray-200 transition-transform hover:scale-110 focus:outline-none flex-shrink-0 snap-start ${currentStyle.backgroundColor === color ? 'ring-2 ring-indigo-500 ring-offset-2' : ''}`}
                     style={{ backgroundColor: color }}
                     title={color}
                 />
@@ -105,7 +119,7 @@ export const NodeContextPanel: React.FC<NodeContextPanelProps> = ({
                     <button
                         key={id}
                         onClick={() => handleShapeChange(id)}
-                        className={`p-1.5 rounded-md transition-all ${currentStyle.shape === id || (!currentStyle.shape && id === 'rectangle') ? 'bg-white shadow-sm text-indigo-600' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}
+                        className={`p-2 rounded-md transition-all ${currentStyle.shape === id || (!currentStyle.shape && id === 'rectangle') ? 'bg-white shadow-sm text-indigo-600' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}
                         title={`Shape: ${id}`}
                     >
                         <Icon className="w-4 h-4" />
@@ -113,12 +127,12 @@ export const NodeContextPanel: React.FC<NodeContextPanelProps> = ({
                 ))}
             </div>
 
-            <div className="flex bg-gray-50 rounded-lg p-1 gap-1 overflow-hidden">
-                 {ICONS.slice(0, 5).map((icon) => (
+            <div className="flex bg-gray-50 rounded-lg p-1 gap-1 overflow-x-auto scrollbar-hide max-w-[180px]">
+                 {ICONS.map((icon) => (
                     <button
                         key={icon}
                         onClick={() => handleIconChange(icon)}
-                        className={`w-7 h-7 flex items-center justify-center text-sm rounded-md transition-colors ${currentStyle.icon === icon ? 'bg-white shadow-sm ring-1 ring-gray-200' : 'hover:bg-gray-100'}`}
+                        className={`w-8 h-8 flex items-center justify-center text-sm rounded-md transition-colors flex-shrink-0 ${currentStyle.icon === icon ? 'bg-white shadow-sm ring-1 ring-gray-200' : 'hover:bg-gray-100'}`}
                     >
                         {icon}
                     </button>

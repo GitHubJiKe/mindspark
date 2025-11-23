@@ -43,7 +43,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
     <div className="absolute top-4 left-4 right-4 md:left-1/2 md:-translate-x-1/2 md:w-auto z-10 flex flex-col md:flex-row gap-2 md:gap-4 items-stretch md:items-center">
       
       {/* Main Control Bar */}
-      <div className="bg-white/90 backdrop-blur-md shadow-lg border border-gray-200 rounded-2xl p-2 flex items-center justify-between md:gap-2">
+      <div className="bg-white/90 backdrop-blur-md shadow-lg border border-gray-200 rounded-2xl p-2 flex items-center justify-between md:justify-start gap-1">
         <div className="flex items-center gap-1 border-r border-gray-200 pr-2 mr-1">
             <span className="font-bold text-gray-800 px-2 flex items-center gap-2">
                 <Sparkles className="w-5 h-5 text-indigo-600" />
@@ -53,7 +53,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
 
         <button
           onClick={onAddNode}
-          className="p-2 hover:bg-gray-100 rounded-xl transition-colors text-gray-700 tooltip-trigger"
+          className="p-2 hover:bg-gray-100 rounded-xl transition-colors text-gray-700"
           title="Add Node"
         >
           <Plus className="w-5 h-5" />
@@ -65,7 +65,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
           title="AI Generator"
         >
           <Sparkles className="w-5 h-5" />
-          <span className="text-sm font-medium hidden md:inline">AI Generator</span>
+          <span className="text-sm font-medium hidden md:inline">AI</span>
         </button>
 
         <div className="h-6 w-px bg-gray-200 mx-1 hidden md:block"></div>
@@ -125,7 +125,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
             <MapIcon className="w-5 h-5" />
         </button>
 
-        {/* Mobile: More Menu Trigger */}
+        {/* Mobile: More Menu Trigger for Import/Export */}
         <div className="md:hidden relative">
             <button
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -170,7 +170,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
             type="text"
             value={topicInput}
             onChange={(e) => setTopicInput(e.target.value)}
-            placeholder="Enter a topic (e.g., 'React Hooks')"
+            placeholder="Enter a topic..."
             className="bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 w-full md:w-64 text-gray-900 placeholder:text-gray-400"
             onKeyDown={(e) => e.key === 'Enter' && handleGenerate()}
           />

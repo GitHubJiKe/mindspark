@@ -14,8 +14,8 @@ export const calculateNewNodePositions = (
 ): MindMapNode[] => {
   const parentX = parentNode.position.x;
   const parentY = parentNode.position.y;
-  const spacingX = 250;
-  const spacingY = 100;
+  const spacingX = 300; // Increased spacing for better layout
+  const spacingY = 120;
   
   // Basic strategy: Place to the right, fanned out vertically
   // Determine the "center" Y for the new group based on how many children
@@ -26,12 +26,18 @@ export const calculateNewNodePositions = (
     const id = `node-${Date.now()}-${index}`;
     return {
       id,
-      type: 'default', // Using default ReactFlow node for simplicity, styled via CSS/Tailwind
+      type: 'custom',
       position: {
         x: parentX + spacingX + (Math.random() * 50), // Slight jitter for organic feel
         y: startY + (index * spacingY),
       },
-      data: { label },
+      data: { 
+        label,
+        style: {
+           shape: 'rectangle',
+           backgroundColor: '#ffffff'
+        }
+      },
     };
   });
 };
@@ -66,10 +72,12 @@ export const getLayoutedElements = (
   dagreGraph.setGraph({ rankdir: direction });
 
   nodes.forEach((node) => {
-    // @ts-ignore - 'measured' is available in newer ReactFlow versions
-    const width = node.measured?.width || node.width || 172;
+    // Estimate width/height if measured dimensions aren't available yet
+    // Increased default dimensions to match new larger node styles
     // @ts-ignore
-    const height = node.measured?.height || node.height || 60;
+    const width = node.measured?.width || node.width || 250;
+    // @ts-ignore
+    const height = node.measured?.height || node.height || 100;
     
     dagreGraph.setNode(node.id, { width, height });
   });
@@ -83,9 +91,9 @@ export const getLayoutedElements = (
   const layoutedNodes = nodes.map((node) => {
     const nodeWithPosition = dagreGraph.node(node.id);
     // @ts-ignore
-    const width = node.measured?.width || node.width || 172;
+    const width = node.measured?.width || node.width || 250;
     // @ts-ignore
-    const height = node.measured?.height || node.height || 60;
+    const height = node.measured?.height || node.height || 100;
 
     return {
       ...node,

@@ -15,9 +15,8 @@ const CustomNode = ({ data, selected }: NodeProps<MindMapData>) => {
   const isCircle = shape === 'circle';
   const isPill = shape === 'pill';
 
-  // Specific styles for shapes
-  // Diamond uses an SVG background to ensure proper hit areas and visual fidelity
-  // Others use standard CSS border-radius
+  // Styles logic:
+  // Increased base sizes and padding for better visibility
   
   return (
     <div className="relative group">
@@ -30,12 +29,13 @@ const CustomNode = ({ data, selected }: NodeProps<MindMapData>) => {
       
       <div 
         className={`
-          relative flex items-center justify-center text-center transition-all duration-200
-          ${selected ? 'ring-2 ring-indigo-500 shadow-md' : 'shadow-sm border border-gray-200'}
-          ${isCircle ? 'rounded-full aspect-square p-4 min-w-[100px]' : ''}
-          ${isPill ? 'rounded-full px-6 py-3 min-w-[120px]' : ''}
-          ${shape === 'rectangle' ? 'rounded-xl px-4 py-3 min-w-[120px]' : ''}
-          ${isDiamond ? 'w-36 h-36 border-none shadow-none bg-transparent' : 'bg-white'}
+          relative flex items-center transition-all duration-200
+          ${selected ? 'ring-2 ring-indigo-500 shadow-xl scale-[1.02]' : 'shadow-md border border-gray-200 hover:shadow-lg'}
+          /* Increased padding significantly for a more spacious feel */
+          ${isCircle ? 'rounded-full aspect-square p-8 justify-center min-w-[160px]' : ''}
+          ${isPill ? 'rounded-full px-10 py-6 justify-start min-w-[200px]' : ''}
+          ${shape === 'rectangle' ? 'rounded-xl px-8 py-6 justify-start min-w-[200px]' : ''}
+          ${isDiamond ? 'w-56 h-56 border-none shadow-none bg-transparent justify-center' : 'bg-white'}
         `}
         style={!isDiamond ? { backgroundColor: bgColor } : undefined}
       >
@@ -55,10 +55,29 @@ const CustomNode = ({ data, selected }: NodeProps<MindMapData>) => {
            </svg>
         )}
 
-        {/* Content */}
-        <div className={`relative z-10 flex flex-col items-center gap-1 ${isDiamond ? 'w-24' : 'max-w-[200px]'}`}>
-           {icon && <span className="text-xl leading-none">{icon}</span>}
-           <span className={`text-sm font-medium text-gray-800 break-words w-full line-clamp-3 ${isDiamond ? 'text-xs' : ''}`}>
+        {/* Content Container */}
+        <div className={`
+             relative z-10 flex w-full
+             ${isDiamond 
+                ? 'flex-col items-center justify-center text-center w-32 gap-1 mx-auto' 
+                : 'flex-row items-center text-left gap-0'
+             }
+        `}>
+           {/* Icon - Wrapped in div for better stability during export */}
+           {icon && (
+             <div className={`
+                flex items-center justify-center flex-shrink-0 w-8 h-8
+                ${!isDiamond ? 'mr-3' : ''}
+             `}>
+               <span className="text-3xl leading-normal select-none">{icon}</span>
+             </div>
+           )}
+           
+           {/* Label */}
+           <span className={`
+             font-medium text-gray-800 break-words leading-relaxed flex-grow
+             ${isDiamond ? 'text-sm line-clamp-4' : 'text-base'}
+           `}>
              {label}
            </span>
         </div>

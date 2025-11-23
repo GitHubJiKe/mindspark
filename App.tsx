@@ -11,7 +11,9 @@ import ReactFlow, {
   NodeChange,
   applyNodeChanges,
   MiniMap,
-  useReactFlow
+  useReactFlow,
+  getRectOfNodes,
+  getTransformForBounds
 } from 'reactflow';
 // import 'reactflow/dist/style.css'; // Removed: CSS is loaded via CDN in index.html
 import { toSvg } from 'html-to-image';
@@ -55,7 +57,7 @@ const AppContent: React.FC = () => {
   const [status, setStatus] = useState<AppStatus>(AppStatus.IDLE);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null);
-  const { fitView } = useReactFlow();
+  const { fitView, getNodes } = useReactFlow();
   
   // UI State
   const [showMiniMap, setShowMiniMap] = useState(true);
@@ -197,7 +199,7 @@ const AppContent: React.FC = () => {
     if (!parentNode) return;
 
     const newNodeId = `node-${Date.now()}`;
-    // Position: To the right (250px) and slightly randomized Y to prevent exact overlap
+    // Position: To the right (300px) and slightly randomized Y
     const newNode: MindMapNode = {
       id: newNodeId,
       data: {
@@ -208,7 +210,7 @@ const AppContent: React.FC = () => {
         },
       },
       position: {
-        x: parentNode.position.x + 250,
+        x: parentNode.position.x + 300,
         y: parentNode.position.y + (Math.random() * 60 - 30),
       },
       type: 'custom',
@@ -267,7 +269,7 @@ const AppContent: React.FC = () => {
       // Place it below the current node
       position: {
         x: selectedNode.position.x,
-        y: selectedNode.position.y + 100, // 100px gap
+        y: selectedNode.position.y + 120, // 120px gap
       },
       type: 'custom',
       selected: true, // Auto-select new node
@@ -399,7 +401,7 @@ const AppContent: React.FC = () => {
             }
         },
         position: { 
-            x: 250 + (Math.random() * 50), 
+            x: 300 + (Math.random() * 50), 
             y: ((idx - (children.length-1)/2) * 120) 
         },
         type: 'custom',
@@ -437,19 +439,38 @@ const AppContent: React.FC = () => {
   }, [nodes, edges]);
 
   const handleExportSvg = useCallback(() => {
-    const flowElement = document.querySelector('.react-flow') as HTMLElement;
-    if (!flowElement) return;
+    // 1. Calculate bounds to include ALL nodes using getRectOfNodes
+    const nodesBounds = getRectOfNodes(getNodes());
+    const viewportElem = document.querySelector('.react-flow__viewport') as HTMLElement;
 
-    toSvg(flowElement, {
-      backgroundColor: '#f8fafc', // slate-50
-      filter: (node) => {
-        // Filter out the controls, minimap, and panel
-        const classList = node?.classList;
-        if (!classList) return true;
-        return !classList.contains('react-flow__controls') && 
-               !classList.contains('react-flow__minimap') &&
-               !classList.contains('react-flow__panel'); 
-      }
+    if (!viewportElem) return;
+
+    // 2. Define dimensions with comfortable padding
+    const padding = 50; 
+    const width = nodesBounds.width + (padding * 2);
+    const height = nodesBounds.height + (padding * 2);
+    
+    // 3. Calculate transform to perfectly center the content
+    // We shift the content by the negative of its top-left corner (to move it to 0,0)
+    // then add the padding to center it within the new dimensions.
+    const transformX = -nodesBounds.x + padding;
+    const transformY = -nodesBounds.y + padding;
+    const scale = 1; // Export at 1:1 scale for clarity
+
+    toSvg(viewportElem, {
+      width: width,
+      height: height,
+      style: {
+          width: `${width}px`,
+          height: `${height}px`,
+          // Center the content using translation
+          transform: `translate(${transformX}px, ${transformY}px) scale(${scale})`,
+          // Add Dot Background (matches editor view)
+          backgroundColor: '#f8fafc',
+          backgroundImage: 'radial-gradient(#cbd5e1 1px, transparent 1px)',
+          backgroundSize: '16px 16px'
+      },
+      fontEmbedCSS: '', // Disable font embedding to reduce file size
     })
     .then((dataUrl) => {
       const a = document.createElement('a');
@@ -461,7 +482,7 @@ const AppContent: React.FC = () => {
       console.error('Failed to export SVG', err);
       alert('Failed to export SVG image.');
     });
-  }, []);
+  }, [getNodes]);
 
   const handleImport = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
