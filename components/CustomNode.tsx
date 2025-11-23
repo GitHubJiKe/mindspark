@@ -9,15 +9,14 @@ const CustomNode = ({ data, selected }: NodeProps<MindMapData>) => {
   const { label, style } = data;
   const shape = style?.shape || 'rectangle';
   const bgColor = style?.backgroundColor || '#ffffff';
+  const textColor = style?.color || '#1e293b'; // Default to slate-800
+  const borderColor = style?.borderColor || '#e2e8f0'; // Default to slate-200
   const icon = style?.icon;
 
   const isDiamond = shape === 'diamond';
   const isCircle = shape === 'circle';
   const isPill = shape === 'pill';
 
-  // Styles logic:
-  // Increased base sizes and padding for better visibility
-  
   return (
     <div className="relative group">
       {/* Target Handle - Left Side */}
@@ -30,14 +29,18 @@ const CustomNode = ({ data, selected }: NodeProps<MindMapData>) => {
       <div 
         className={`
           relative flex items-center transition-all duration-200
-          ${selected ? 'ring-2 ring-indigo-500 shadow-xl scale-[1.02]' : 'shadow-md border border-gray-200 hover:shadow-lg'}
-          /* Increased padding significantly for a more spacious feel */
+          ${selected ? 'ring-2 ring-indigo-500 shadow-xl scale-[1.02]' : 'shadow-md hover:shadow-lg'}
           ${isCircle ? 'rounded-full aspect-square p-8 justify-center min-w-[160px]' : ''}
           ${isPill ? 'rounded-full px-10 py-6 justify-start min-w-[200px]' : ''}
           ${shape === 'rectangle' ? 'rounded-xl px-8 py-6 justify-start min-w-[200px]' : ''}
-          ${isDiamond ? 'w-56 h-56 border-none shadow-none bg-transparent justify-center' : 'bg-white'}
+          ${isDiamond ? 'w-56 h-56 border-none shadow-none bg-transparent justify-center' : 'bg-white border'}
         `}
-        style={!isDiamond ? { backgroundColor: bgColor } : undefined}
+        style={{
+            backgroundColor: !isDiamond ? bgColor : undefined,
+            color: textColor,
+            borderColor: !isDiamond ? borderColor : undefined,
+            borderWidth: !isDiamond ? '1px' : undefined,
+        }}
       >
         {/* Diamond SVG Background */}
         {isDiamond && (
@@ -49,7 +52,7 @@ const CustomNode = ({ data, selected }: NodeProps<MindMapData>) => {
              <polygon 
                points="50,0 100,50 50,100 0,50" 
                fill={bgColor} 
-               stroke={selected ? '#6366f1' : '#e5e7eb'} 
+               stroke={selected ? '#6366f1' : borderColor} 
                strokeWidth="1" 
              />
            </svg>
@@ -75,9 +78,11 @@ const CustomNode = ({ data, selected }: NodeProps<MindMapData>) => {
            
            {/* Label */}
            <span className={`
-             font-medium text-gray-800 break-words leading-relaxed flex-grow
+             font-medium break-words leading-relaxed flex-grow
              ${isDiamond ? 'text-sm line-clamp-4' : 'text-base'}
-           `}>
+           `}
+           style={{ color: textColor }} 
+           >
              {label}
            </span>
         </div>

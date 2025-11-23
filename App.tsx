@@ -13,20 +13,74 @@ import ReactFlow, {
   MiniMap,
   useReactFlow,
   getRectOfNodes,
-  getTransformForBounds
 } from 'reactflow';
-// import 'reactflow/dist/style.css'; // Removed: CSS is loaded via CDN in index.html
 import { toSvg } from 'html-to-image';
 
 import { Toolbar } from './components/Toolbar';
 import { NodeContextPanel } from './components/NodeContextPanel';
 import { EdgeContextPanel } from './components/EdgeContextPanel';
-import { MapSettingsPanel } from './components/MapSettingsPanel';
+import { MapSettingsPanel, Theme } from './components/MapSettingsPanel';
 import CustomNode from './components/CustomNode';
 import { expandConceptWithAI, suggestMapFromTopic } from './services/geminiService';
 import { calculateNewNodePositions, downloadJson, getLayoutedElements } from './utils/graphUtils';
 import { MindMapNode, MindMapEdge, AppStatus, NodeShape } from './types';
 import { Loader2 } from 'lucide-react';
+
+// --- Theme Definitions ---
+const THEMES: Theme[] = [
+  {
+    id: 'default',
+    label: 'Classic Clean',
+    colors: {
+       bg: '#f8fafc', // slate-50
+       dots: '#cbd5e1', // slate-300
+       nodeBg: '#ffffff',
+       nodeColor: '#1e293b', // slate-800
+       nodeBorder: '#e2e8f0', // slate-200
+       edge: '#cbd5e1',
+    },
+    shape: 'rectangle'
+  },
+  {
+    id: 'midnight',
+    label: 'Midnight',
+    colors: {
+       bg: '#0f172a', // slate-900
+       dots: '#334155', // slate-700
+       nodeBg: '#1e293b', // slate-800
+       nodeColor: '#f8fafc', // slate-50
+       nodeBorder: '#334155', // slate-700
+       edge: '#475569', // slate-600
+    },
+    shape: 'rectangle'
+  },
+  {
+    id: 'ocean',
+    label: 'Ocean Breeze',
+    colors: {
+       bg: '#f0f9ff', // sky-50
+       dots: '#bae6fd', // sky-200
+       nodeBg: '#e0f2fe', // sky-100
+       nodeColor: '#0c4a6e', // sky-900
+       nodeBorder: '#bae6fd', // sky-200
+       edge: '#7dd3fc', // sky-300
+    },
+    shape: 'pill'
+  },
+  {
+    id: 'warm',
+    label: 'Sunset Glow',
+    colors: {
+       bg: '#fff7ed', // orange-50
+       dots: '#fed7aa', // orange-200
+       nodeBg: '#fffaf0', // floral white
+       nodeColor: '#9a3412', // orange-900
+       nodeBorder: '#fdba74', // orange-300
+       edge: '#fdba74', // orange-300
+    },
+    shape: 'rectangle'
+  }
+];
 
 // Register custom node types
 const nodeTypes = {
@@ -42,7 +96,9 @@ const initialNodes: MindMapNode[] = [
         isRoot: true,
         style: {
             shape: 'pill',
-            backgroundColor: '#ffffff'
+            backgroundColor: '#ffffff',
+            color: '#1e293b',
+            borderColor: '#e2e8f0'
         }
     },
     position: { x: 0, y: 0 },
@@ -64,11 +120,15 @@ const AppContent: React.FC = () => {
 
   // Global Settings State
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [currentThemeId, setCurrentThemeId] = useState<string>('default');
   const [globalEdgeSettings, setGlobalEdgeSettings] = useState({
       type: 'default',
       animated: true,
       dashed: false
   });
+
+  // Current Theme derived object
+  const currentTheme = useMemo(() => THEMES.find(t => t.id === currentThemeId) || THEMES[0], [currentThemeId]);
 
   // Wrapper for node changes to handle selection
   const onNodesChangeWithSelection = useCallback(
@@ -83,9 +143,12 @@ const AppContent: React.FC = () => {
         ...params, 
         type: globalEdgeSettings.type, 
         animated: globalEdgeSettings.animated,
-        style: { strokeDasharray: globalEdgeSettings.dashed ? '5,5' : undefined }
+        style: { 
+            strokeDasharray: globalEdgeSettings.dashed ? '5,5' : undefined,
+            stroke: currentTheme.colors.edge
+        }
     }, eds)),
-    [setEdges, globalEdgeSettings]
+    [setEdges, globalEdgeSettings, currentTheme]
   );
 
   const onNodeClick = useCallback((event: React.MouseEvent, node: MindMapNode) => {
@@ -109,15 +172,17 @@ const AppContent: React.FC = () => {
       data: { 
           label: 'New Node',
           style: {
-              shape: 'rectangle',
-              backgroundColor: '#ffffff'
+              shape: currentTheme.shape,
+              backgroundColor: currentTheme.colors.nodeBg,
+              color: currentTheme.colors.nodeColor,
+              borderColor: currentTheme.colors.nodeBorder
           }
       },
       position: { x: Math.random() * 400 - 200, y: Math.random() * 400 - 200 },
       type: 'custom',
     };
     setNodes((nds) => nds.concat(newNode));
-  }, [setNodes]);
+  }, [setNodes, currentTheme]);
 
   const handleUpdateLabel = useCallback((nodeId: string, newLabel: string) => {
     setNodes((nds) =>
@@ -161,7 +226,7 @@ const AppContent: React.FC = () => {
     }));
   }, [setEdges]);
 
-  // Update Global Settings
+  // Update Global Settings (Edge Type/Anim/Dash)
   const handleGlobalSettingsUpdate = useCallback((newSettings: typeof globalEdgeSettings) => {
     setGlobalEdgeSettings(newSettings);
     
@@ -176,6 +241,40 @@ const AppContent: React.FC = () => {
         }
     })));
   }, [setEdges]);
+
+  // Handle Theme Application
+  const handleApplyTheme = useCallback((themeId: string) => {
+    const theme = THEMES.find(t => t.id === themeId);
+    if (!theme) return;
+
+    setCurrentThemeId(themeId);
+
+    // Update Nodes
+    setNodes((nds) => nds.map((node) => ({
+        ...node,
+        data: {
+            ...node.data,
+            style: {
+                ...node.data.style,
+                backgroundColor: theme.colors.nodeBg,
+                color: theme.colors.nodeColor,
+                borderColor: theme.colors.nodeBorder,
+                shape: theme.shape,
+                // Keep icon if it exists
+            }
+        }
+    })));
+
+    // Update Edges
+    setEdges((eds) => eds.map((edge) => ({
+        ...edge,
+        style: {
+            ...edge.style,
+            stroke: theme.colors.edge
+        }
+    })));
+
+  }, [setNodes, setEdges]);
 
   // Handle Auto Layout
   const handleLayout = useCallback(() => {
@@ -199,14 +298,15 @@ const AppContent: React.FC = () => {
     if (!parentNode) return;
 
     const newNodeId = `node-${Date.now()}`;
-    // Position: To the right (300px) and slightly randomized Y
     const newNode: MindMapNode = {
       id: newNodeId,
       data: {
         label: 'New Idea',
         style: {
-          shape: 'rectangle',
-          backgroundColor: '#ffffff',
+          shape: currentTheme.shape,
+          backgroundColor: currentTheme.colors.nodeBg,
+          color: currentTheme.colors.nodeColor,
+          borderColor: currentTheme.colors.nodeBorder
         },
       },
       position: {
@@ -214,7 +314,7 @@ const AppContent: React.FC = () => {
         y: parentNode.position.y + (Math.random() * 60 - 30),
       },
       type: 'custom',
-      selected: true, // Auto-select new node
+      selected: true, 
     };
 
     const newEdge: MindMapEdge = {
@@ -224,22 +324,19 @@ const AppContent: React.FC = () => {
       type: globalEdgeSettings.type,
       animated: globalEdgeSettings.animated,
       style: {
-        stroke: '#cbd5e1',
+        stroke: currentTheme.colors.edge,
         strokeDasharray: globalEdgeSettings.dashed ? '5,5' : undefined,
       },
     };
 
-    // Deselect other nodes and add new one
     setNodes((nds) => [
       ...nds.map((n) => ({ ...n, selected: false })),
       newNode
     ]);
     setEdges((eds) => eds.concat(newEdge));
-    
-    // Select the new node immediately for the UI context panel
     setSelectedNodeId(newNodeId);
     setSelectedEdgeId(null);
-  }, [selectedNodeId, nodes, globalEdgeSettings, setNodes, setEdges]);
+  }, [selectedNodeId, nodes, globalEdgeSettings, currentTheme, setNodes, setEdges]);
 
   // Add sibling node shortcut (Enter)
   const handleAddSiblingNode = useCallback(() => {
@@ -248,10 +345,7 @@ const AppContent: React.FC = () => {
     const selectedNode = nodes.find((n) => n.id === selectedNodeId);
     if (!selectedNode) return;
 
-    // Find the edge connecting to this node to identify the parent
     const parentEdge = edges.find((e) => e.target === selectedNodeId);
-    
-    // If no parent (e.g. root node), do nothing
     if (!parentEdge) return;
 
     const parentId = parentEdge.source;
@@ -262,17 +356,18 @@ const AppContent: React.FC = () => {
       data: {
         label: 'New Idea',
         style: {
-          shape: 'rectangle',
-          backgroundColor: '#ffffff',
+          shape: currentTheme.shape,
+          backgroundColor: currentTheme.colors.nodeBg,
+          color: currentTheme.colors.nodeColor,
+          borderColor: currentTheme.colors.nodeBorder
         },
       },
-      // Place it below the current node
       position: {
         x: selectedNode.position.x,
-        y: selectedNode.position.y + 120, // 120px gap
+        y: selectedNode.position.y + 120,
       },
       type: 'custom',
-      selected: true, // Auto-select new node
+      selected: true,
     };
 
     const newEdge: MindMapEdge = {
@@ -282,39 +377,35 @@ const AppContent: React.FC = () => {
       type: globalEdgeSettings.type,
       animated: globalEdgeSettings.animated,
       style: {
-        stroke: '#cbd5e1',
+        stroke: currentTheme.colors.edge,
         strokeDasharray: globalEdgeSettings.dashed ? '5,5' : undefined,
       },
     };
 
-    // Deselect other nodes and add new one
     setNodes((nds) => [
       ...nds.map((n) => ({ ...n, selected: false })),
       newNode
     ]);
     setEdges((eds) => eds.concat(newEdge));
-    
-    // Select the new node immediately
     setSelectedNodeId(newNodeId);
     setSelectedEdgeId(null);
-  }, [selectedNodeId, nodes, edges, globalEdgeSettings, setNodes, setEdges]);
+  }, [selectedNodeId, nodes, edges, globalEdgeSettings, currentTheme, setNodes, setEdges]);
 
   // Keyboard shortcut listener
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      // Ignore if user is typing in an input field
       const target = event.target as HTMLElement;
       if (['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName) || target.isContentEditable) {
         return;
       }
 
       if (event.key === 'Tab' && selectedNodeId) {
-        event.preventDefault(); // Prevent focus switch
+        event.preventDefault(); 
         handleAddChildNode();
       }
 
       if (event.key === 'Enter' && selectedNodeId) {
-        event.preventDefault(); // Prevent default behavior
+        event.preventDefault(); 
         handleAddSiblingNode();
       }
     };
@@ -333,15 +424,16 @@ const AppContent: React.FC = () => {
       if (relatedConcepts.length > 0) {
         const newNodes = calculateNewNodePositions(node, relatedConcepts, nodes);
         
-        // Transform generated nodes to custom type
         const customNewNodes: MindMapNode[] = newNodes.map(n => ({
             ...n,
             type: 'custom',
             data: {
                 ...n.data,
                 style: {
-                    shape: 'rectangle' as NodeShape,
-                    backgroundColor: '#ffffff'
+                    shape: currentTheme.shape,
+                    backgroundColor: currentTheme.colors.nodeBg,
+                    color: currentTheme.colors.nodeColor,
+                    borderColor: currentTheme.colors.nodeBorder
                 }
             }
         }));
@@ -353,7 +445,7 @@ const AppContent: React.FC = () => {
           type: globalEdgeSettings.type,
           animated: globalEdgeSettings.animated,
           style: { 
-            stroke: '#94a3b8',
+            stroke: currentTheme.colors.edge,
             strokeDasharray: globalEdgeSettings.dashed ? '5,5' : undefined
           }
         }));
@@ -367,7 +459,7 @@ const AppContent: React.FC = () => {
     } finally {
       setStatus(AppStatus.IDLE);
     }
-  }, [nodes, setNodes, setEdges, globalEdgeSettings]);
+  }, [nodes, setNodes, setEdges, globalEdgeSettings, currentTheme]);
 
   // AI Logic: Generate a fresh map from a topic
   const handleGenerateMap = useCallback(async (topic: string) => {
@@ -382,8 +474,10 @@ const AppContent: React.FC = () => {
             label,
             isRoot: true,
             style: {
-                shape: 'pill',
-                backgroundColor: '#ffffff',
+                shape: currentTheme.shape,
+                backgroundColor: currentTheme.colors.nodeBg,
+                color: currentTheme.colors.nodeColor,
+                borderColor: currentTheme.colors.nodeBorder,
                 icon: '💡'
             }
         },
@@ -396,8 +490,10 @@ const AppContent: React.FC = () => {
         data: { 
             label: child,
             style: {
-                shape: 'rectangle' as NodeShape,
-                backgroundColor: '#ffffff'
+                shape: currentTheme.shape,
+                backgroundColor: currentTheme.colors.nodeBg,
+                color: currentTheme.colors.nodeColor,
+                borderColor: currentTheme.colors.nodeBorder
             }
         },
         position: { 
@@ -414,7 +510,7 @@ const AppContent: React.FC = () => {
         type: globalEdgeSettings.type,
         animated: globalEdgeSettings.animated,
         style: { 
-            stroke: '#cbd5e1',
+            stroke: currentTheme.colors.edge,
             strokeDasharray: globalEdgeSettings.dashed ? '5,5' : undefined
         }
       }));
@@ -432,45 +528,36 @@ const AppContent: React.FC = () => {
     } finally {
       setStatus(AppStatus.IDLE);
     }
-  }, [setNodes, setEdges, globalEdgeSettings, fitView]);
+  }, [setNodes, setEdges, globalEdgeSettings, fitView, currentTheme]);
 
   const handleExport = useCallback(() => {
     downloadJson({ nodes, edges }, 'mindmap.json');
   }, [nodes, edges]);
 
   const handleExportSvg = useCallback(() => {
-    // 1. Calculate bounds to include ALL nodes using getRectOfNodes
     const nodesBounds = getRectOfNodes(getNodes());
     const viewportElem = document.querySelector('.react-flow__viewport') as HTMLElement;
 
     if (!viewportElem) return;
 
-    // 2. Define dimensions with comfortable padding
-    const padding = 50; 
+    const padding = 100; 
     const width = nodesBounds.width + (padding * 2);
     const height = nodesBounds.height + (padding * 2);
-    
-    // 3. Calculate transform to perfectly center the content
-    // We shift the content by the negative of its top-left corner (to move it to 0,0)
-    // then add the padding to center it within the new dimensions.
     const transformX = -nodesBounds.x + padding;
     const transformY = -nodesBounds.y + padding;
-    const scale = 1; // Export at 1:1 scale for clarity
+    const scale = 1; 
 
+    // Use current theme colors for export
     toSvg(viewportElem, {
       width: width,
       height: height,
       style: {
           width: `${width}px`,
           height: `${height}px`,
-          // Center the content using translation
           transform: `translate(${transformX}px, ${transformY}px) scale(${scale})`,
-          // Add Dot Background (matches editor view)
-          backgroundColor: '#f8fafc',
-          backgroundImage: 'radial-gradient(#cbd5e1 1px, transparent 1px)',
-          backgroundSize: '16px 16px'
+          backgroundColor: '#ffffff', // Pure white background
       },
-      fontEmbedCSS: '', // Disable font embedding to reduce file size
+      fontEmbedCSS: '', 
     })
     .then((dataUrl) => {
       const a = document.createElement('a');
@@ -493,13 +580,17 @@ const AppContent: React.FC = () => {
           const content = e.target?.result as string;
           const data = JSON.parse(content);
           if (data.nodes && data.edges) {
-            // Ensure imported nodes have valid types for this version
             const upgradedNodes: MindMapNode[] = data.nodes.map((n: any) => ({
                 ...n,
                 type: 'custom',
                 data: {
                     ...n.data,
-                    style: n.data.style || { shape: 'rectangle' as NodeShape, backgroundColor: '#ffffff' }
+                    style: n.data.style || { 
+                        shape: 'rectangle' as NodeShape, 
+                        backgroundColor: '#ffffff',
+                        color: '#1e293b',
+                        borderColor: '#e2e8f0'
+                    }
                 }
             }));
             setNodes(upgradedNodes);
@@ -527,18 +618,21 @@ const AppContent: React.FC = () => {
     edges.find(e => e.id === selectedEdgeId) || null,
   [edges, selectedEdgeId]);
 
-  // Derived Default Options for ReactFlow
   const defaultEdgeOptions = useMemo(() => ({
     type: globalEdgeSettings.type,
     animated: globalEdgeSettings.animated,
     style: {
-        stroke: '#cbd5e1',
+        stroke: currentTheme.colors.edge,
         strokeDasharray: globalEdgeSettings.dashed ? '5,5' : undefined
     }
-  }), [globalEdgeSettings]);
+  }), [globalEdgeSettings, currentTheme]);
 
   return (
-    <div className="w-screen h-screen bg-slate-50 relative">
+    // Dynamic background color from theme
+    <div 
+        className="w-screen h-screen relative transition-colors duration-500"
+        style={{ backgroundColor: currentTheme.colors.bg }}
+    >
       <Toolbar 
         onAddNode={handleAddNode}
         onGenerateMap={handleGenerateMap}
@@ -552,7 +646,6 @@ const AppContent: React.FC = () => {
         status={status}
       />
       
-      {/* Loading Overlay */}
       {status === AppStatus.LOADING && (
           <div className="absolute top-20 left-1/2 -translate-x-1/2 z-50 bg-white/80 backdrop-blur rounded-full px-4 py-2 shadow-sm border border-indigo-100 flex items-center gap-2 text-indigo-700 text-sm font-medium animate-pulse pointer-events-none">
               <Loader2 className="w-4 h-4 animate-spin"/>
@@ -572,17 +665,22 @@ const AppContent: React.FC = () => {
         onPaneClick={onPaneClick}
         defaultEdgeOptions={defaultEdgeOptions}
         fitView
-        className="bg-slate-50"
+        // Remove fixed bg class, rely on container
+        className="transition-colors duration-500"
         minZoom={0.1}
         maxZoom={2}
       >
-        <Background gap={16} size={1} color="#cbd5e1" />
+        <Background 
+            gap={16} 
+            size={1} 
+            color={currentTheme.colors.dots} 
+        />
         <Controls showInteractive={false} className="!bg-white !border-gray-200 !shadow-sm !m-4 !rounded-lg" />
         {showMiniMap && (
             <MiniMap 
                 className="!bg-white !border-gray-200 !shadow-sm !rounded-lg !m-4" 
-                nodeColor={() => '#e2e8f0'}
-                maskColor="rgba(241, 245, 249, 0.7)"
+                nodeColor={currentTheme.colors.nodeBorder}
+                maskColor={currentTheme.id === 'midnight' ? 'rgba(30, 41, 59, 0.7)' : 'rgba(241, 245, 249, 0.7)'}
             />
         )}
       </ReactFlow>
@@ -607,6 +705,9 @@ const AppContent: React.FC = () => {
         onClose={() => setIsSettingsOpen(false)}
         globalSettings={globalEdgeSettings}
         onUpdateGlobalSettings={handleGlobalSettingsUpdate}
+        themes={THEMES}
+        currentThemeId={currentThemeId}
+        onApplyTheme={handleApplyTheme}
       />
     </div>
   );

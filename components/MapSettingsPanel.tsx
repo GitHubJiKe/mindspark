@@ -1,5 +1,19 @@
 import React from 'react';
-import { X, Spline, Minus, CornerDownRight, Activity } from 'lucide-react';
+import { X, Spline, Minus, CornerDownRight, Activity, Palette } from 'lucide-react';
+
+export interface Theme {
+    id: string;
+    label: string;
+    colors: {
+       bg: string;
+       dots: string;
+       nodeBg: string;
+       nodeColor: string;
+       nodeBorder: string;
+       edge: string;
+    };
+    shape: 'rectangle' | 'pill' | 'circle' | 'diamond';
+}
 
 interface MapSettingsPanelProps {
   isOpen: boolean;
@@ -10,6 +24,9 @@ interface MapSettingsPanelProps {
     dashed: boolean;
   };
   onUpdateGlobalSettings: (settings: { type: string; animated: boolean; dashed: boolean }) => void;
+  themes: Theme[];
+  currentThemeId: string;
+  onApplyTheme: (themeId: string) => void;
 }
 
 const EDGE_TYPES = [
@@ -24,6 +41,9 @@ export const MapSettingsPanel: React.FC<MapSettingsPanelProps> = ({
   onClose,
   globalSettings,
   onUpdateGlobalSettings,
+  themes,
+  currentThemeId,
+  onApplyTheme
 }) => {
   if (!isOpen) return null;
 
@@ -41,17 +61,56 @@ export const MapSettingsPanel: React.FC<MapSettingsPanelProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black/20 backdrop-blur-sm z-50 flex items-center justify-center animate-in fade-in">
-      <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 w-[90%] max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
+      <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 w-[90%] max-w-md overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
         
-        <div className="flex items-center justify-between p-4 border-b border-gray-100">
-          <h3 className="font-semibold text-gray-800">Global Map Settings</h3>
+        <div className="flex items-center justify-between p-4 border-b border-gray-100 flex-shrink-0">
+          <h3 className="font-semibold text-gray-800 flex items-center gap-2">
+            <Palette className="w-5 h-5 text-indigo-500" />
+            Map Appearance
+          </h3>
           <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-lg text-gray-500 transition-colors">
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <div className="p-6 flex flex-col gap-6">
+        <div className="p-6 flex flex-col gap-6 overflow-y-auto custom-scrollbar">
           
+          {/* Themes Section */}
+          <div className="flex flex-col gap-3">
+             <label className="text-sm font-semibold text-gray-700">Color Theme</label>
+             <div className="grid grid-cols-2 gap-3">
+                {themes.map((theme) => (
+                    <button
+                        key={theme.id}
+                        onClick={() => onApplyTheme(theme.id)}
+                        className={`
+                            relative flex items-center gap-3 p-3 rounded-xl border text-left transition-all
+                            ${currentThemeId === theme.id 
+                                ? 'border-indigo-500 ring-1 ring-indigo-500 bg-indigo-50/50' 
+                                : 'border-gray-200 hover:border-indigo-200 hover:bg-gray-50'
+                            }
+                        `}
+                    >
+                        {/* Theme Preview Swatch */}
+                        <div 
+                            className="w-10 h-10 rounded-full shadow-sm flex items-center justify-center border"
+                            style={{ backgroundColor: theme.colors.bg, borderColor: theme.colors.dots }}
+                        >
+                            <div 
+                                className="w-5 h-5 rounded-md shadow-sm border"
+                                style={{ backgroundColor: theme.colors.nodeBg, borderColor: theme.colors.nodeBorder }}
+                            />
+                        </div>
+                        <span className={`text-sm font-medium ${currentThemeId === theme.id ? 'text-indigo-700' : 'text-gray-700'}`}>
+                            {theme.label}
+                        </span>
+                    </button>
+                ))}
+             </div>
+          </div>
+          
+          <div className="h-px bg-gray-100" />
+
           {/* Edge Style Section */}
           <div className="flex flex-col gap-3">
             <label className="text-sm font-semibold text-gray-700">Connection Style</label>
@@ -94,8 +153,8 @@ export const MapSettingsPanel: React.FC<MapSettingsPanelProps> = ({
 
         </div>
         
-        <div className="p-4 bg-gray-50 border-t border-gray-100 text-center">
-            <p className="text-xs text-gray-500">Settings apply to all current and future connections.</p>
+        <div className="p-4 bg-gray-50 border-t border-gray-100 text-center flex-shrink-0">
+            <p className="text-xs text-gray-500">Settings & themes apply to all elements.</p>
         </div>
       </div>
     </div>

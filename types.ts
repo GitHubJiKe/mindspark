@@ -8,6 +8,8 @@ export interface MindMapData {
   isRoot?: boolean;
   style?: {
     backgroundColor?: string;
+    color?: string;
+    borderColor?: string;
     shape?: NodeShape;
     icon?: string;
   };
